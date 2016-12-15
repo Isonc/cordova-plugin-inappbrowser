@@ -75,6 +75,7 @@ public class InAppBrowser extends CordovaPlugin {
     protected static final String LOG_TAG = "InAppBrowser";
     private static final String SELF = "_self";
     private static final String SYSTEM = "_system";
+    private static final String BROWSER = "_browser";
     private static final String EXIT_EVENT = "exit";
     private static final String LOCATION = "location";
     private static final String ZOOM = "zoom";
@@ -194,6 +195,11 @@ public class InAppBrowser extends CordovaPlugin {
                     else if (SYSTEM.equals(target)) {
                         LOG.d(LOG_TAG, "in system");
                         result = openExternal(url);
+                    }
+		    // BROWSER
+                    else if (BROWSER.equals(target)) {
+                        LOG.d(LOG_TAG, "in browser");
+                        result = openExternalBrowser(url);
                     }
                     // BLANK - or anything else
                     else {
@@ -397,6 +403,31 @@ public class InAppBrowser extends CordovaPlugin {
             } else {
                 intent.setData(uri);
             }
+            intent.putExtra(Browser.EXTRA_APPLICATION_ID, cordova.getActivity().getPackageName());
+            this.cordova.getActivity().startActivity(intent);
+            return "";
+        // not catching FileUriExposedException explicitly because buildtools<24 doesn't know about it
+        } catch (java.lang.RuntimeException e) {
+            LOG.d(LOG_TAG, "InAppBrowser: Error loading url "+url+":"+ e.toString());
+            return e.toString();
+        }
+    }
+
+    /**
+     * Display a new browser only with the specified URL.
+     *
+     * @param url the url to load.
+     * @return "" if ok, or error message.
+     */
+    public String openExternalBrowser(String url) {
+        try {
+            Intent intent = null;
+            intent = new Intent(Intent.ACTION_VIEW);
+            // Omitting the MIME type for file: URLs causes "No Activity found to handle Intent".
+            // Adding the MIME type to http: URLs causes them to not be handled by the downloader.
+            Uri uri = Uri.parse(url);
+            intent.setDataAndType(uri, "text/html");
+            
             intent.putExtra(Browser.EXTRA_APPLICATION_ID, cordova.getActivity().getPackageName());
             this.cordova.getActivity().startActivity(intent);
             return "";
